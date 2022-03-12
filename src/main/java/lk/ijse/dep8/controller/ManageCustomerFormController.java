@@ -2,10 +2,15 @@ package lk.ijse.dep8.controller;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.FileChooser;
+import javafx.util.Callback;
 import lk.ijse.dep8.Customer;
 
 import java.io.*;
@@ -21,13 +26,14 @@ public class ManageCustomerFormController {
     public TextField txtName;
     public TextField txtAddress;
     public TableView<Customer> tblCustomers;
+    public TextField txtPicture;
 
     public void initialize() {
         tblCustomers.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("id"));
         tblCustomers.getColumns().get(1).setCellValueFactory(new PropertyValueFactory<>("name"));
         tblCustomers.getColumns().get(2).setCellValueFactory(new PropertyValueFactory<>("address"));
 
-        TableColumn<Customer, Button> lastCol = (TableColumn<Customer, Button>) tblCustomers.getColumns().get(3);
+        TableColumn<Customer, Button> lastCol = (TableColumn<Customer, Button>) tblCustomers.getColumns().get(4);
         lastCol.setCellValueFactory(param -> {
             Button btnDelete = new Button("Delete");
             btnDelete.setOnAction(event -> {
@@ -35,6 +41,22 @@ public class ManageCustomerFormController {
                 saveCustomers();
             });
             return new ReadOnlyObjectWrapper<>(btnDelete);
+        });
+
+        TableColumn<Customer, ImageView> col = (TableColumn<Customer, ImageView>) tblCustomers.getColumns().get(3);
+        col.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Customer, ImageView>, ObservableValue<ImageView>>() {
+            @Override
+            public ObservableValue<ImageView> call(TableColumn.CellDataFeatures<Customer, ImageView> param) {
+                ByteArrayInputStream is = new ByteArrayInputStream(param.getValue().getBytes());
+                ImageView imageView = new ImageView(new Image(is));
+                imageView.setFitWidth(100);
+                imageView.setFitHeight(100);
+                return new ReadOnlyObjectWrapper<>(imageView);
+            }
+        });
+
+        tblCustomers.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+
         });
 
         initDatabase();
@@ -55,22 +77,30 @@ public class ManageCustomerFormController {
             txtAddress.requestFocus();
             txtAddress.selectAll();
             return;
+        }else if (txtPicture.getText().trim().isEmpty()){
+            txtPicture.requestFocus();
+            return;
         }
 
-//        boolean b = tblCustomers.getItems().stream().anyMatch(c -> c.getId().equalsIgnoreCase(txtID.getText()));
-//
-//        for (Customer customer : tblCustomers.getItems()) {
-//            if (customer.getId().matches(txtID.getText())){
-//                txtID.requestFocus();
-//                txtID.selectAll();
-//                return;
-//            }
-//        }
+        byte[] bytes;
+        try {
+            Path path = Paths.get(txtPicture.getText());
+            InputStream is = Files.newInputStream(path);
+            bytes = new byte[is.available()];
+            is.read(bytes);
+            is.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR,"Can not read the image file",ButtonType.OK).show();
+            txtPicture.clear();
+            txtPicture.requestFocus();
+            return;
+        }
 
         Customer newCustomer = new Customer(
                 txtID.getText(),
                 txtName.getText(),
-                txtAddress.getText());
+                txtAddress.getText(),bytes);
         tblCustomers.getItems().add(newCustomer);
 
         boolean result = saveCustomers();
@@ -127,4 +157,13 @@ public class ManageCustomerFormController {
         }
     }
 
+    public void btnBrowseOnAction(ActionEvent actionEvent) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select an image");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("images","*.jpg","*.jpeg",".png"));
+        File file = fileChooser.showOpenDialog(tblCustomers.getScene().getWindow());
+        if (file!=null){
+            txtPicture.setText(file.getAbsolutePath());
+        }
+    }
 }
