@@ -29,6 +29,7 @@ public class ManageCustomerFormController {
     public TextField txtPicture;
     public AnchorPane Anchorpane;
     public Button btnSave;
+    public ImageView img;
 
     public void initialize() {
         tblCustomers.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -47,8 +48,8 @@ public class ManageCustomerFormController {
 
         TableColumn<Customer, ImageView> col = (TableColumn<Customer, ImageView>) tblCustomers.getColumns().get(3);
         col.setCellValueFactory(param -> {
-            ByteArrayInputStream is = new ByteArrayInputStream(param.getValue().getBytes());
-            ImageView imageView = new ImageView(new Image(is));
+            ByteArrayInputStream bis = new ByteArrayInputStream(param.getValue().getBytes());
+            ImageView imageView = new ImageView(new Image(bis));
             imageView.setFitWidth(100);
             imageView.setFitHeight(100);
             return new ReadOnlyObjectWrapper<>(imageView);
@@ -61,6 +62,8 @@ public class ManageCustomerFormController {
                 txtName.setText(newValue.getName());
                 txtAddress.setText(newValue.getAddress());
                 txtPicture.setText("[PICTURE]");
+                ByteArrayInputStream bis = new ByteArrayInputStream(newValue.getBytes());
+                img.setImage(new Image(bis));
                 btnSave.setText("Update");
             }
         });
@@ -80,30 +83,22 @@ public class ManageCustomerFormController {
         txtName.clear();
         txtAddress.clear();
         txtPicture.clear();
+        img.setImage(null);
     }
 
-    public void btnSaveCustomer_OnAction(ActionEvent actionEvent) {
+    public void btnSaveCustomer_OnAction(ActionEvent actionEvent) throws IOException {
         if (isValidated()){
             if (btnSave.getText().equals("Save Customer")){
-                byte[] bytes;
-                try {
-                    Path path = Paths.get(txtPicture.getText());
-                    InputStream is = Files.newInputStream(path);
-                    bytes = new byte[is.available()];
-                    is.read(bytes);
-                    is.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    new Alert(Alert.AlertType.ERROR, "Can not read the image file", ButtonType.OK).show();
-                    txtPicture.clear();
-                    txtPicture.requestFocus();
-                    return;
-                }
+                Path path = Paths.get(txtPicture.getText());
+                InputStream is = Files.newInputStream(path);
+                byte[] bytes = new byte[is.available()];
+                is.read(bytes);
+                is.close();
 
                 Customer newCustomer = new Customer(
                         txtID.getText(),
                         txtName.getText(),
-                        txtAddress.getText(), bytes);
+                        txtAddress.getText(),bytes);
                 tblCustomers.getItems().add(newCustomer);
 
                 boolean result = saveCustomers();
@@ -125,9 +120,8 @@ public class ManageCustomerFormController {
                         InputStream is = Files.newInputStream(path);
                         byte[] bytes = new byte[is.available()];
                         is.read(bytes);
-                        is.close();
                         cus.setBytes(bytes);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         new Alert(Alert.AlertType.ERROR,"Failed read the picture,try again!",ButtonType.OK).show();
                         e.printStackTrace();
                     }
@@ -216,6 +210,18 @@ public class ManageCustomerFormController {
         File file = fileChooser.showOpenDialog(tblCustomers.getScene().getWindow());
         if (file != null) {
             txtPicture.setText(file.getAbsolutePath());
+            try {
+                InputStream is = Files.newInputStream(Paths.get(file.getAbsolutePath()));
+                img.setImage(new Image(is));
+                img.setFitHeight(100);
+                img.setFitWidth(100);
+            } catch (IOException e) {
+                new Alert(Alert.AlertType.ERROR,"Can not read the Image file,Please try again!").show();
+                txtPicture.clear();
+                txtPicture.requestFocus();
+                e.printStackTrace();
+            }
         }
+
     }
 }
