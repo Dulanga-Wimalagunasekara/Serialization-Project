@@ -69,10 +69,13 @@ public class ManageCustomerFormController {
         });
 
         Anchorpane.setOnMouseClicked(event -> {
-            tblCustomers.getSelectionModel().clearSelection();
-            clearFields();
-            txtID.setEditable(true);
-            btnSave.setText("Save Customer");
+            if(!tblCustomers.getSelectionModel().isEmpty()){
+                tblCustomers.getSelectionModel().clearSelection();
+                clearFields();
+                txtID.setEditable(true);
+                txtID.requestFocus();
+                btnSave.setText("Save Customer");
+            }
         });
 
         initDatabase();
@@ -107,6 +110,7 @@ public class ManageCustomerFormController {
                     new Alert(Alert.AlertType.ERROR, "Failed to save the customer, try again").show();
                     tblCustomers.getItems().remove(newCustomer);
                 } else {
+                    new Alert(Alert.AlertType.CONFIRMATION,"Customer Saved Successfully!",ButtonType.OK).show();
                     clearFields();
                 }
                 txtID.requestFocus();
