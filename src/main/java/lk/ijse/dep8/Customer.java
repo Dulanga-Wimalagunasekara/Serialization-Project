@@ -1,5 +1,7 @@
 package lk.ijse.dep8;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -64,4 +66,7 @@ public class Customer implements Serializable {
     public void setBytes(byte[] bytes) {
         this.bytes = bytes;
     }
+
+
+
 }
